@@ -1,4 +1,4 @@
-package com.holytax.revenge;
+package revenge;
 
 import java.io.File;
 import java.io.FileWriter;
