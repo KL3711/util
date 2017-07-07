@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import jodd.io.ZipUtil;
 
@@ -57,13 +60,13 @@ public class DataTransferUtil {
 	
 	
 	/**
-	 * 使用zip进行压缩
+	 * 使用gzip进行压缩
 	 * 
 	 * @param str
 	 *            压缩前的文本
 	 * @return 返回压缩后的文本
 	 */
-	public static String zipString(String str) {
+	public static String gzipString(String str) {
 		if (str == null){
 			return null;
 		}
@@ -86,13 +89,13 @@ public class DataTransferUtil {
 	}
 
 	/**
-	 * 使用zip进行解压缩
+	 * 使用gzip进行解压缩
 	 * 
 	 * @param compressedStr
 	 *            压缩后的文本
 	 * @return 解压后的字符串
 	 */
-	public static final String unzipString(String compressedStr) {
+	public static String unGzipString(String compressedStr) {
 		if (compressedStr == null) {
 			return null;
 		}
@@ -116,20 +119,83 @@ public class DataTransferUtil {
 		return decompressed;
 	}
 	
+	/**
+	 * 使用gzip进行压缩
+	 * 
+	 * @param str
+	 *            压缩前的文本
+	 * @return 返回压缩后的文本
+	 */
+	public static String zipString(String str) {
+		if (str == null){
+			return null;
+		}
+		ByteArrayOutputStream out = null;
+		ZipOutputStream zos = null;
+		String compressedStr = null;
+		try{
+			out = new ByteArrayOutputStream();
+			zos = new ZipOutputStream(out);
+			zos.putNextEntry(new ZipEntry("str"));
+			zos.write(str.getBytes(Charset.forName("UTF-8")));
+			zos.close();
+			BASE64Encoder encoder = new BASE64Encoder();
+			compressedStr = encoder.encode(out.toByteArray());
+			out.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		
+		return compressedStr;
+	}
+
+	/**
+	 * 使用gzip进行解压缩
+	 * 
+	 * @param compressedStr
+	 *            压缩后的文本
+	 * @return 解压后的字符串
+	 */
+	public static String unzipString(String compressedStr) {
+		if (compressedStr == null) {
+			return null;
+		}
+		String decompressed = null;
+		try{
+			BASE64Decoder decoder = new BASE64Decoder();
+			byte[] compressed = decoder.decodeBuffer(compressedStr);
+			ByteArrayInputStream in = new ByteArrayInputStream(compressed);
+			ZipInputStream zis = new ZipInputStream(in);
+			zis.getNextEntry();
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			byte[] buf = new byte[1024];
+			int i = -1;
+			while((i = zis.read(buf))!=-1){
+				out.write(buf,0,i);
+			}
+			decompressed = out.toString();
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return decompressed;
+	}
 	
 	public static void main(String[] args) {
 //		String gzStr = zipString("[[\"这是一个\",\"2100000001\",\"00000903\",\"2017-02-13\",\"210106300420939\",\"1311\",\"222.87\"]]");
 //		
 //		System.out.println("gzStr:" + gzStr);
-		String gzStr = DataTransferUtil.zipString("这是一个");
-		System.out.println("gzStr:" + gzStr);
-		if(gzStr.equals("H4sIAAAAAAAAALv66NTxS7t3fAMATAoyaQgAAAA=")){
-			System.out.println("一样啊！！！");
+		StringBuffer sb = new StringBuffer();
+		for(int i =0;i<100000;i++){
+			sb.append("[\"这是一个\",\"2100000001\",\"00000903\",\"2017-02-13\",\"210106300420939\",\"1311\",\"222.87\"]");
 		}
-		System.out.println(gzStr);
-		System.out.println(unzipString(gzStr));
-		System.out.println("gzStr:" + unzipString("H4sIAAAAAAAAALv66NTxS7t3fAMATAoyaQgAAAA"));
 		
+		String gzStr = DataTransferUtil.gzipString(sb.toString());
+		System.out.println(gzStr.length());//100w个字符串1374
+		String zStr = DataTransferUtil.zipString(sb.toString());
+		System.out.println(zStr.length());//100w个字符串1514
+//		String uzStr = unzipString(zStr);
+//		System.out.println("uzStr : " + uzStr);
 	}
 	
 }
